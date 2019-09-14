@@ -8,6 +8,9 @@ from scipy import signal
 # import matplotlib.dates as mdates
 from pandas_datareader import data as pdr
 
+from tal import peakvalley
+from zigzag import zigzag
+
 yf.pdr_override()
 
 
@@ -67,9 +70,23 @@ xp2 = df.Close.ewm(span=26, adjust=False).mean()
 # prevs = df.SIGN.shift(1)
 # gc = np.where((prevs >= prevm) & (df.SIGN <= df.MACD), "GC", "-")
 # df['Crossing'] = np.where((prevs <= prevm) & (df.SIGN >= df.MACD), "DC", gc)
-currzz = 'valley'
-lastpeak = {}
-lastvalley = {}
+# currzz = 'peak'
+# lastpeak = 'date'
+# lastvalley = 'date'
+# tmpcols = ['date', 'zz', 'price']
+# tmpz = pd.DataFrame({
+#     'date': ['2019-03-15'],
+#     'zz': 'peak',
+#     'price': 128.0
+# })
+# tdl = pd.DataFrame({
+#     'date': ['2019-03-15'],
+#     'zz': 'peak',
+#     'price': 128.0
+# })
+# tmpz = tmpz.append(tdl, ignore_index=True)
+# print(tmpz)
+
 
 h3 = (df.High.shift(3) + ((df.High.shift(3) * 1.5)/100))
 h2 = (df.High.shift(2) + ((df.High.shift(2) * 1.5)/100))
@@ -79,39 +96,40 @@ l1 = (df.Low.shift(1) - ((df.Low.shift(1) * 1.5)/100))
 l2 = (df.Low.shift(2) - ((df.Low.shift(2) * 1.5)/100))
 l3 = (df.Low.shift(3) - ((df.Low.shift(3) * 1.5)/100))
 
-_isu2d3 = np.where(df.Close.shift(3) <= df.Open.shift(3), -1, 1)
-_isu2d2 = np.where(df.Close.shift(2) <= df.Open.shift(2), -1, 1)
-_isu2d1 = np.where(df.Close.shift(1) <= df.Open.shift(1), -1, 1)
-_isu2d = np.where(df.Close <= df.Open, -1, 1)
+# _isu2d3 = np.where(df.Close.shift(3) <= df.Open.shift(3), -1, 1)
+# _isu2d2 = np.where(df.Close.shift(2) <= df.Open.shift(2), -1, 1)
+# _isu2d1 = np.where(df.Close.shift(1) <= df.Open.shift(1), -1, 1)
+# _isu2d = np.where(df.Close <= df.Open, -1, 1)
 
-_bdir32 = np.where((_isu2d3 == 1) & (_isu2d2 == -1), -1, 1)
-_bdir21 = np.where((_isu2d2 == 1) & (_isu2d1 == -1), -1, _bdir32)
-_bdir10 = np.where((_isu2d == 1) & (_isu2d == -1), -1, _bdir21)
+# _bdir32 = np.where((_isu2d3 == 1) & (_isu2d2 == -1), -1, 1)
+# _bdir21 = np.where((_isu2d2 == 1) & (_isu2d1 == -1), -1, _bdir32)
+# _bdir10 = np.where((_isu2d == 1) & (_isu2d == -1), -1, _bdir21)
 
-_bdir1 = np.where((_isu2d1 == 1) & (_isu2d == -1) & (_bdir10 == 1), 'peak', '-')
-_bdir0 = np.where((_isu2d1 == -1) & (_isu2d == 1) & (_bdir10 == -1), 'valley', '-')
+# _bdir1 = np.where((_isu2d1 == 1) & (_isu2d == -1) & (_bdir10 == 1), 'peak', '-')
+# _bdir0 = np.where((_isu2d1 == -1) & (_isu2d == 1) & (_bdir10 == -1), 'valley', '-')
 
-_bdirection = np.where(_bdir1 != '-', _bdir1, '-')
-_direction = np.where(_bdir0 != '-', _bdir0, _bdirection)
+# _bdirection = np.where(_bdir1 != '-', _bdir1, '-')
+# _direction = np.where(_bdir0 != '-', _bdir0, _bdirection)
 
-# currentzz = np.where(_bdir1 == _bdir0, '-', _direction)
-# findzz = np.where((currentzz != currzz) & (currentzz != '-'), currzz, currentzz)
+# df['zigzag'] = np.where(_bdir1 == _bdir0, '-', _direction)
 
-df['zigzag'] = np.where(_bdir1 == _bdir0, '-', _direction)
+# if (tmpzz.zigzag != '') & (tmpzz.zigzag != currzz):
+#     currzz = tmpzz.zigzag
 
 # df['ud'] = np.where(df.Open <= df.Close, -1, 1)
 # df['dir'] = df.ud.shift(1)
 
-
+# df = zigzag(df)
+df = peakvalley(df)
 # ppeak = np.where((h3 < df.High) & (h2 < df.High) & (h1 < df.High), 'down', '-')
 # df['fractal'] = np.where((l3 > df.Low) & (l1 > df.Low) & (l1 > df.Low), 'up', ppeak)
 # df['buy'] = np.where((df.fractal == 'up') | (df.Crossing.shift(2) == 'DC'), df.Low + 5, '-')
 # df['sell'] = np.where((df.fractal == 'down') | (df.Crossing.shift(2) == 'GC'), df.High - 5, '-')
-df['buy'] = np.where(df.zigzag == 'valley', df.Low, '-')
-df['sell'] = np.where(df.zigzag == 'peak', df.High, '-')
+# df['buy'] = np.where(df.zigzag == 'valley', df.Low, '-')
+# df['sell'] = np.where(df.zigzag == 'peak', df.High, '-')
 
-# print(df)
+print(df)
 df.to_csv('result.csv')
 # print(df.loc[df.zz != 'nzz'])
 # print(df.loc[df['fractal'].isin(['down','up'])])
-print(df.loc[df['zigzag'].isin(['peak', 'valley'])])
+# print(df.loc[df['zigzag'].isin(['peak', 'valley'])])
